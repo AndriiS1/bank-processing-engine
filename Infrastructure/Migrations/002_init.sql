@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS app.orders (
+    id UUID PRIMARY KEY,
+    name TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);

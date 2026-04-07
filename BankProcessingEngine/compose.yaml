@@ -1,0 +1,7 @@
+﻿services:
+  bankprocessingengine:
+    image: bankprocessingengine
+    build:
+      context: .
+      dockerfile: Dockerfile
+

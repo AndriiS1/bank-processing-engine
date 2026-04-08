@@ -36,6 +36,25 @@ public partial class DapperContext(ILogger<DapperContext> logger, DbConnectionFa
         return await action(finalConnection);
     }
     
+    public async Task WithTransaction(Func<DbConnection, DbTransaction, Task> action)
+    {
+        await WithConnection(async connection =>
+        {
+            await using var transaction = await connection.BeginTransactionAsync();
+            try
+            {
+                await action(connection, transaction);
+                await transaction.CommitAsync();
+                return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        });
+    }
+    
     [LoggerMessage(LogLevel.Warning, "Attempt {Attempt} failed: {ExMessage}. Retrying in {ValueTotalSeconds}s...")]
     partial void LogRetryConnectionMessage(int attempt, string exMessage, double valueTotalSeconds);
 }

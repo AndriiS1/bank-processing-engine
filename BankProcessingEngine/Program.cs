@@ -39,16 +39,16 @@ public static class Program
                 .AllowAnyHeader();
         });
         
-        var summaries = new[]
-        {
-            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-        };
-        
         app.MapPost("/payments", async (CreatePaymentRequest request, IMediator mediator) =>
         {
             var command = new CreatePaymentCommand(request.UserId, request.Amount);
             var result = await mediator.Send(command);
             return result ? Results.Ok() : Results.BadRequest("Payment failed");
+        });
+        
+        app.MapPost("/payments/publish", async (IMediator mediator) =>
+        {
+             await mediator.Send(new PublishPaymentsCommand());
         });
         
         app.MapGet("/users", async (IMediator mediator) => await mediator.Send(new GetUsersQuery()));

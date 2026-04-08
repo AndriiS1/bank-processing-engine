@@ -7,7 +7,7 @@ namespace Application.Requests;
 
 public record CreatePaymentCommand(Guid UserId, long Amount) : IRequest<bool>;
 
-public class CreatePaymentHandler(DapperContext dapperContext) : IRequestHandler<CreatePaymentCommand, bool>
+public class CreatePaymentCommandHandler(DapperContext dapperContext) : IRequestHandler<CreatePaymentCommand, bool>
 {
     public async Task<bool> Handle(CreatePaymentCommand request, CancellationToken cancellationToken)
     {

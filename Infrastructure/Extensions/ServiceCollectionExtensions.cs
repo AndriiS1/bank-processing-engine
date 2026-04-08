@@ -1,5 +1,7 @@
 using Dapper;
+using Domain.Abstractions;
 using Infrastructure.Persistence;
+using Infrastructure.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,10 +16,12 @@ public static class ServiceCollectionExtensions
         DefaultTypeMap.MatchNamesWithUnderscores = true;
         
         var connectionString = configuration.GetConnectionString("Default")
-                               ?? throw new InvalidOperationException("Connection string 'Default' is missing.");;
+                               ?? throw new InvalidOperationException("Connection string 'Default' is missing.");
 
         services.AddSingleton(new DbConnectionFactory(connectionString));
         services.AddScoped<DapperContext>();
+        services.AddScoped<IOutboxService, OutboxService>();
+        services.AddSingleton<IKafkaProducer, KafkaProducer>();
 
         return services;
     }

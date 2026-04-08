@@ -1,5 +1,6 @@
 ﻿services:
-  bankprocessingengine:
+  bank-processing-engine:
+    container_name: bank_processing_engine
     build:
       context: .
       dockerfile: Dockerfile
@@ -8,12 +9,14 @@
     environment:
       - ConnectionStrings__Default=${CONNECTION_STRING}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     ports:
       - "8080:8080"
       - "8081:8081"
 
   postgres:
+    container_name: postgres
     image: postgres:16
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
@@ -23,6 +26,11 @@
       - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   pgdata:

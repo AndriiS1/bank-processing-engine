@@ -11,6 +11,7 @@ public static class MigrationExtensions
         var configuration = services.GetRequiredService<IConfiguration>();
         var loggerFactory = services.GetRequiredService<ILoggerFactory>();
         var logger = loggerFactory.CreateLogger("MigrationRunner");
+        logger.Log(LogLevel.Critical, "TESTTTT");
 
         var connectionString = configuration.GetConnectionString("Default") 
                                ?? throw new InvalidOperationException("Connection string 'Default' is missing.");

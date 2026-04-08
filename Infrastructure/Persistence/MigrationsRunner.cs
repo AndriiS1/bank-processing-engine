@@ -1,4 +1,5 @@
 using DbUp;
+using DbUp.Helpers;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Persistence;
@@ -12,6 +13,7 @@ public static partial class MigrationRunner
         var upgrader = DeployChanges.To
             .PostgresqlDatabase(connectionString)
             .WithScriptsFromFileSystem("/app/migrations_folder")
+            .JournalTo(new NullJournal())
             .LogToConsole()
             .Build();
 

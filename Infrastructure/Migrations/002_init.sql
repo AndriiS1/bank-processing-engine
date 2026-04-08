@@ -19,8 +19,6 @@ CREATE TABLE bank_payments.outbox_messages (
 
 DROP TABLE IF EXISTS bank_payments.idempotent_requests;
 
-CREATE TABLE bank_payments.idempotent_requests (
-   request_id UUID PRIMARY KEY,
-   user_id UUID NOT NULL,
-   processed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE bank_payments.processed_events (
+    event_id UUID PRIMARY KEY DEFAULT gen_random_uuid()
 );

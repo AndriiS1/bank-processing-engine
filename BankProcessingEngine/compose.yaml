@@ -14,6 +14,8 @@
         condition: service_healthy
       kafka:
         condition: service_healthy
+      init-kafka:
+        condition: service_completed_successfully
     ports:
       - "${API_PORT_EXTERNAL}:${API_PORT_INTERNAL}"
       - "8081:8081"
@@ -59,6 +61,21 @@
       timeout: 10s
       retries: 5
       start_period: 15s
+      
+  init-kafka:
+    image: apache/kafka:latest
+    container_name: init-kafka
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: [ "/bin/sh", "-c" ]
+    command: |
+      "
+      # Block until the topic is created
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic payment-events --replication-factor 1 --partitions 3
+      
+      echo 'Topic payment-events created successfully'
+      "
 
 volumes:
   pgdata:

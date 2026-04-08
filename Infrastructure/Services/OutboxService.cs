@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Dapper;
 using Domain;
 using Domain.Abstractions;
@@ -31,7 +32,7 @@ public partial class OutboxService(DapperContext dapperContext, IKafkaProducer p
             {
                 try
                 {
-                    await producer.ProduceAsync(Constants.PaymentEventsTopic, msg.Id.ToString(), msg.Payload, ct);
+                    await producer.ProduceAsync(Constants.PaymentEventsTopic, msg.Id.ToString(), JsonSerializer.Serialize(msg.Payload), ct);
                     
                     const string updateSql = "UPDATE bank_payments.outbox_messages SET processed_at = NOW() WHERE id = @Id";
                     await conn.ExecuteAsync(updateSql, new { msg.Id });

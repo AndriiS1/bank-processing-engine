@@ -1,5 +1,6 @@
 using Dapper;
 using Domain.Abstractions;
+using Domain.Models;
 using Infrastructure.Persistence;
 using Infrastructure.Services;
 using Microsoft.Extensions.Configuration;
@@ -14,6 +15,7 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration)
     {
         DefaultTypeMap.MatchNamesWithUnderscores = true;
+        SqlMapper.AddTypeHandler(typeof(PaymentPayload), new JsonTypeHandler());
         
         var connectionString = configuration.GetConnectionString("Default")
                                ?? throw new InvalidOperationException("Connection string 'Default' is missing.");
@@ -22,6 +24,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<DapperContext>();
         services.AddScoped<IOutboxService, OutboxService>();
         services.AddSingleton<IKafkaProducer, KafkaProducer>();
+        services.AddHostedService<Consumer>();
 
         return services;
     }

@@ -1,6 +1,7 @@
 using System.Data;
 using System.Text.Json;
 using Dapper;
+using Domain.Models;
 using Infrastructure.Persistence;
 using MediatR;
 namespace Application.Requests;
@@ -9,7 +10,7 @@ public record CreatePaymentCommand(Guid UserId, long Amount) : IRequest<bool>;
 
 public class CreatePaymentCommandHandler(DapperContext dapperContext) : IRequestHandler<CreatePaymentCommand, bool>
 {
-    public async Task<bool> Handle(CreatePaymentCommand request, CancellationToken cancellationToken)
+public async Task<bool> Handle(CreatePaymentCommand request, CancellationToken cancellationToken)
     {
         return await dapperContext.WithConnection(async connection =>
         {
@@ -17,29 +18,40 @@ public class CreatePaymentCommandHandler(DapperContext dapperContext) : IRequest
             
             try
             {
-                const string updateSql = """
-                                             UPDATE bank_payments.users
-                                             SET amount = amount - @Amount
-                                             WHERE id = @UserId AND amount >= @Amount
-                                         """;
+                const string validateSql = """
+                    SELECT amount 
+                    FROM bank_payments.users 
+                    WHERE id = @UserId 
+                    FOR SHARE;
+                """;
 
-                var affectedRows = await connection.ExecuteAsync(new CommandDefinition(
-                    updateSql, new { request.UserId, request.Amount }, transaction, cancellationToken: cancellationToken));
+                var currentBalance = await connection.QueryFirstOrDefaultAsync<long?>(
+                    new CommandDefinition(validateSql, new { request.UserId }, transaction, cancellationToken: cancellationToken));
 
-                if (affectedRows == 0) throw new Exception("Insufficient funds or user not found");
+                if (currentBalance == null) 
+                    throw new Exception("User not found");
+
+                if (currentBalance < request.Amount) 
+                    throw new Exception("Insufficient funds");
                 
-                var paymentEvent = new { request.UserId, request.Amount, OccurredAt = DateTime.UtcNow };
+                var payload = new PaymentPayload(
+                    TransactionId: Guid.NewGuid(),
+                    UserId: request.UserId,
+                    Amount: request.Amount,
+                    Timestamp: DateTimeOffset.UtcNow
+                );
                 
                 const string outboxSql = """
-                                             INSERT INTO bank_payments.outbox_messages (type, payload)
-                                             VALUES (@Type, @Payload::jsonb)
-                                         """;
+                    INSERT INTO bank_payments.outbox_messages (id, type, payload)
+                    VALUES (@Id, @Type, @Payload::jsonb)
+                """;
 
                 await connection.ExecuteAsync(new CommandDefinition(
                     outboxSql, 
                     new { 
+                        Id = Guid.NewGuid(),
                         Type = "PaymentCreated", 
-                        Payload = JsonSerializer.Serialize(paymentEvent) 
+                        Payload = JsonSerializer.Serialize(payload) 
                     }, 
                     transaction, 
                     cancellationToken: cancellationToken));
@@ -47,7 +59,7 @@ public class CreatePaymentCommandHandler(DapperContext dapperContext) : IRequest
                 await transaction.CommitAsync(cancellationToken);
                 return true;
             }
-            catch
+            catch (Exception)
             {
                 await transaction.RollbackAsync(cancellationToken);
                 throw;

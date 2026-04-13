@@ -11,19 +11,23 @@ The system implements a **basic payment processing pipeline with an Outbox patte
 
 The application follows this flow:
 
-1. Create Payment
+1. User & Payment Queries
+	- Users can be retrieved for reference
+	- Outbox messages can be inspected for debugging and monitoring
+2. Create Payment
 	- Client sends a payment request
 	- Payment is stored in the database
 	- An outbox message is created
-2. Outbox Storage
+3. Outbox Storage
 	- Payment events are stored in the Outbox table
 	- Ensures reliability and eventual consistency
-3. Publish Payments
-	- A background or manual trigger processes outbox messages
+4. Publish Payments
+	- Manual trigger processes outbox messages (publishing to kafka)
 	- Messages are marked as published after successful processing
-4. User & Payment Queries
-	- Users can be retrieved for reference
-	- Outbox messages can be inspected for debugging and monitoring
+5. Consumer payment processing
+	- Retrieves payments from kafka, check if it is already processed
+	- If event is new to process, execute payment accrual and mark as proccessed for idempotency
+
 
 ---
 
